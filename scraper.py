@@ -13,14 +13,11 @@ def scrape_manga(url):
         chapter_name = chapter.find('a').text
         link = chapter.find('a').get('href')
 
-        print(title)
-        print(chapter_name)
-        print(image)
-        print(link)
-        return True
+        # print(title)
+        # print(chapter_name)
+        # print(image)
+        # print(link)
+        return chapter_name
     else:
-        print("Invalid link")
-        return False
-
-
-scrape_manga('https://chapmanganato.com/manga-lg988863')
+        #print("Invalid link")
+        return "Invalid link"
