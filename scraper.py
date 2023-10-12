@@ -21,3 +21,13 @@ def scrape_manga(url):
     else:
         #print("Invalid link")
         return "Invalid link"
+
+def compare_chapter(url, latest_chapter):
+    html_text = requests.get(url).text
+    soup = BeautifulSoup(html_text, 'lxml')
+
+    chapter = soup.find('li', class_ = 'a-h')
+    chapter_name = chapter.find('a').text
+
+    if chapter_name != latest_chapter:
+        return 1
