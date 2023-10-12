@@ -1,0 +1,27 @@
+{
+    "jjwaterz": [
+        {
+            "https://chapmanganato.com/manga-lg988863": {
+                "title": "Blue Box",
+                "latest_chapter": "Chapter 120",
+                "image": "https://avt.mkklcdnv6temp.com/6/l/24-1618675007.jpg"
+            }
+        },
+        {
+            "https://chapmanganato.com/manga-iw985379": {
+                "title": "Sousou No Frieren",
+                "latest_chapter": "Chapter 114.5",
+                "image": "https://avt.mkklcdnv6temp.com/13/g/21-1589429188.jpg"
+            }
+        }
+    ],
+    "test": [
+        {
+            "https://chapmanganato.com/manga-iw985379": {
+                "title": "Sousou No Frieren",
+                "latest_chapter": "Chapter 114.5",
+                "image": "https://avt.mkklcdnv6temp.com/13/g/21-1589429188.jpg"
+            }
+        }
+    ]
+}
