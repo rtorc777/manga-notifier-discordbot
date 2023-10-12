@@ -46,7 +46,7 @@ def compare_chapter(username, url):
                 break
 
         if latest_chapter_name != file_data[username][index][url]["latest_chapter"]:
-            print("new chapter")
+            print("new chapter: " + latest_chapter_link)
 
             file_data[username][index][url]["latest_chapter"] = latest_chapter_name
 
