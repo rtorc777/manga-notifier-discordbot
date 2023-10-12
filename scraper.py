@@ -3,7 +3,7 @@ import requests
 import json
 
 def scrape_manga(url):
-    if 'manganato.com/manga' in url:
+    if valid_link(url):
         html_text = requests.get(url).text
         soup = BeautifulSoup(html_text, 'lxml')
 
@@ -72,8 +72,20 @@ def write_json(username, data):
             print("Successfully added")
         else:
             print("Already exists")
-            
-    
-#scrape_manga("https://chapmanganato.com/manga-lg988863")
+
+
+def valid_link(url):
+    if 'manganato.com/manga' in url:
+        html_text = requests.get(url).text
+        soup = BeautifulSoup(html_text, 'lxml')
+        if soup.find('li', class_ = 'a-h'):
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+scrape_manga("https://chapmanganato.com/manga-lg988863")
 #scrape_manga("https://chapmanganato.com/manga-iw985379")
-compare_chapter("jjwaterz","https://chapmanganato.com/manga-iw985379")
+#compare_chapter("jjwaterz","https://chapmanganato.com/manga-iw985379")
