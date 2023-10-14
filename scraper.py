@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import json
 
-def scrape_manga(url):
+def scrape_manga(url, user):
     if valid_link(url):
         html_text = requests.get(url).text
         soup = BeautifulSoup(html_text, 'lxml')
@@ -22,14 +22,17 @@ def scrape_manga(url):
                  }
 
         
-        write_json("test", manga)
+        save_manga = add_manga(user, manga)
 
-        return "Successfully added"
+        if save_manga == "Successfully added":
+            return manga
+        else: 
+            return "Already tracking this link"
     else:
         return "Invalid link"
     
 
-def compare_chapter(username, url):
+def compare_chapter(url, user):
     html_text = requests.get(url).text
     soup = BeautifulSoup(html_text, 'lxml')
 
@@ -40,15 +43,15 @@ def compare_chapter(username, url):
     with open('data.json','r+') as file:    
         file_data = json.load(file)
     
-        for i,manga in enumerate(file_data[username]):
+        for i,manga in enumerate(file_data[user]):
             if url in manga:
                 index = i
                 break
 
-        if latest_chapter_name != file_data[username][index][url]["latest_chapter"]:
+        if latest_chapter_name != file_data[user][index][url]["latest_chapter"]:
             print("new chapter: " + latest_chapter_link)
 
-            file_data[username][index][url]["latest_chapter"] = latest_chapter_name
+            file_data[user][index][url]["latest_chapter"] = latest_chapter_name
 
             with open('data.json', 'w') as file:
                 json.dump(file_data, file, indent = 4)
@@ -56,22 +59,35 @@ def compare_chapter(username, url):
             print("nothing")
 
 
-def write_json(username, data):
+def add_manga(user, data):
      with open('data.json','r+') as file:
         file_data = json.load(file)
 
-        if username not in file_data:
-            file_data[username] = []
+        if user not in file_data:
+            file_data[user] = []
         
         url = list(data.keys())[0]
 
-        if not any(url in d for d in file_data[username]):
-            file_data[username].append(data)
+        if not any(url in d for d in file_data[user]):
+            file_data[user].append(data)
             file.seek(0)
             json.dump(file_data, file, indent = 4)
-            print("Successfully added")
+            return "Successfully added"
         else:
-            print("Already exists")
+            return "Already exists"
+
+
+def remove_manga(user, id):
+     with open('data.json','r+') as file:
+        file_data = json.load(file)
+
+        try:
+            del file_data[user][id]
+            with open('data.json', 'w') as file:
+                json.dump(file_data, file, indent = 4)
+            return "Successfully removed"
+        except IndexError:
+            return "Invalid index"
 
 
 def valid_link(url):
@@ -86,6 +102,10 @@ def valid_link(url):
         return False
 
 
-scrape_manga("https://chapmanganato.com/manga-lg988863")
-#scrape_manga("https://chapmanganato.com/manga-iw985379")
-#compare_chapter("jjwaterz","https://chapmanganato.com/manga-iw985379")
+def get_user_list(user):
+    with open('data.json','r+') as file:    
+        file_data = json.load(file)
+        if user in file_data:
+            return file_data[user]
+        else:
+            return "Use !add (link) to get started"
