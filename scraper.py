@@ -59,17 +59,17 @@ def compare_chapter(url, user):
             print("nothing")
 
 
-def add_manga(user, data):
-     with open('data.json','r+') as file:
+def add_manga(user, manga):
+    with open('data.json','r+') as file:
         file_data = json.load(file)
 
         if user not in file_data:
             file_data[user] = []
         
-        url = list(data.keys())[0]
+        url = next(iter(manga))
 
         if not any(url in d for d in file_data[user]):
-            file_data[user].append(data)
+            file_data[user].append(manga)
             file.seek(0)
             json.dump(file_data, file, indent = 4)
             return "Successfully added"
@@ -78,14 +78,18 @@ def add_manga(user, data):
 
 
 def remove_manga(user, id):
-     with open('data.json','r+') as file:
+    if id < 0:
+         return "Enter positive number"
+     
+    with open('data.json','r+') as file:
         file_data = json.load(file)
 
         try:
+            manga = file_data[user][id]
             del file_data[user][id]
             with open('data.json', 'w') as file:
                 json.dump(file_data, file, indent = 4)
-            return "Successfully removed"
+            return manga
         except IndexError:
             return "Invalid index"
 

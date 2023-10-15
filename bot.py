@@ -17,42 +17,62 @@ async def on_ready():
     await channel.send("Manga bot is ready!")
 
 
+@bot.event
+async def on_command_error(ctx, err):
+    await ctx.send("Invalid arguments")
+
+
 @bot.command()
 async def add(ctx, url):
     user_id = str(ctx.message.author.id)
+    manga = scrape_manga(url, user_id)
 
-    scraper = scrape_manga(url, user_id)
-    if isinstance(scraper, dict):
-        heading = scraper[url]["title"]
-        latest_chapter = scraper[url]["latest_chapter"]
-        embed = discord.Embed(
-            color = discord.Color.dark_purple(),
-            title = f'__{heading}__',
-            description = f"**Latest Chapter**: {latest_chapter}"
-        )
-
-        embed.set_footer(text=f"Succesfully added manga to tracking list")
-        embed.set_image(url=scraper[url]["image"])
+    if isinstance(manga, dict):
+        embed = create_embed(manga)
+        embed.color = discord.Color.green()
+        embed.set_footer(text="Succesfully added manga to tracking list")
 
         await ctx.send(embed=embed)
     else:
-        await ctx.send(scraper)
+        await ctx.send(manga)
 
 
 @bot.command()
-async def remove(ctx, id):
-    id = int(id)
+async def remove(ctx, id: int):
     user_id = str(ctx.message.author.id)
+    id = int(id)
+    manga = remove_manga(user_id, id)
 
-    remove = remove_manga(user_id, id)
-    await ctx.send(remove)
+    if isinstance(manga, dict):
+        embed = create_embed(manga)
+        embed.color = discord.Color.dark_red()
+        embed.set_footer(text="Succesfully removed manga from tracking list")
+
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send(manga)
+        
+
+def create_embed(manga):
+    url = next(iter(manga))
+    title = manga[url]["title"]
+    latest_chapter = manga[url]["latest_chapter"]
+
+    embed = discord.Embed(
+        color = discord.Color.green(),
+        title = f'__{title}__',
+    )
+
+    embed.add_field(name = "", value=f"**Link**: [HERE]({url})\n\n **Latest**: {latest_chapter}", inline=False)
+    embed.set_image(url=manga[url]["image"])
+
+    return embed
 
 
 @bot.command()
 async def list(ctx):
     user = ctx.message.author
     user_id = str(ctx.message.author.id)
-    #id = bot.get_user(int(user))
     list = get_user_list(user_id)
 
     if isinstance(list, str):
@@ -63,11 +83,12 @@ async def list(ctx):
             title = str(user.name) + "'s List"
         )
 
-        for id, links in enumerate(list):
-            for link, manga in links.items():
+        for id, urls in enumerate(list):
+            for url, manga in urls.items():
                 title = manga["title"]
-                embed.add_field(name = f'__{title}__', value=f"**Link**: [HERE]({link})\n **ID**: {id}\n **Latest**: " + manga["latest_chapter"], inline=False)
+                embed.add_field(name = f'__{title}__ ({id})', value=f"**Link**: [HERE]({url})\n **Latest**: " + manga["latest_chapter"] + "\n\u200B", inline=False)
 
         await ctx.send(embed=embed)
-        
+
+
 bot.run(BOT_TOKEN)
