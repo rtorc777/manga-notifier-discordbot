@@ -12,11 +12,13 @@ def scrape_manga(url, user):
 
         chapter = soup.find('li', class_ = 'a-h')
         latest_chapter_name = chapter.find('a').text
+        latest_chapter_link = chapter.find('a').get('href')
 
         manga = {url: 
                     {
                         "title": title,
                         "latest_chapter": latest_chapter_name,
+                        "latest_chapter_link": latest_chapter_link,
                         "image": image
                     }
                  }
@@ -32,31 +34,31 @@ def scrape_manga(url, user):
         return "Invalid link"
     
 
-def compare_chapter(url, user):
-    html_text = requests.get(url).text
-    soup = BeautifulSoup(html_text, 'lxml')
-
-    chapter = soup.find('li', class_ = 'a-h')
-    latest_chapter_name = chapter.find('a').text
-    latest_chapter_link = chapter.find('a').get('href')
+def check_chapters(user):
+    updated_mangas = []
 
     with open('data.json','r+') as file:    
         file_data = json.load(file)
     
-        for i,manga in enumerate(file_data[user]):
-            if url in manga:
-                index = i
-                break
+        for index, manga in enumerate(file_data[user]):
+            url = next(iter(manga)) 
+            html_text = requests.get(url).text
+            soup = BeautifulSoup(html_text, 'lxml')
 
-        if latest_chapter_name != file_data[user][index][url]["latest_chapter"]:
-            print("new chapter: " + latest_chapter_link)
+            chapter = soup.find('li', class_ = 'a-h')
+            latest_chapter_name = chapter.find('a').text
+            latest_chapter_link = chapter.find('a').get('href')
 
-            file_data[user][index][url]["latest_chapter"] = latest_chapter_name
+            if latest_chapter_name != file_data[user][index][url]["latest_chapter"]:
+                file_data[user][index][url]["latest_chapter"] = latest_chapter_name
+                file_data[user][index][url]["latest_chapter_link"] = latest_chapter_link
 
-            with open('data.json', 'w') as file:
-                json.dump(file_data, file, indent = 4)
-        else:
-            print("nothing")
+                with open('data.json', 'w') as file:
+                    json.dump(file_data, file, indent = 4)
+                
+                updated_mangas.append(file_data[user][index])
+
+    return updated_mangas 
 
 
 def add_manga(user, manga):
@@ -84,6 +86,9 @@ def remove_manga(user, id):
     with open('data.json','r+') as file:
         file_data = json.load(file)
 
+        if user not in file_data:
+            file_data[user] = []
+
         try:
             manga = file_data[user][id]
             del file_data[user][id]
@@ -92,6 +97,17 @@ def remove_manga(user, id):
             return manga
         except IndexError:
             return "Invalid index"
+
+
+def remove_all_manga(user):
+    with open('data.json','r+') as file:
+        file_data = json.load(file)
+        file_data[user] = []
+
+        with open('data.json', 'w') as file:
+            json.dump(file_data, file, indent = 4)
+            
+        return "Removed all manga from list"
 
 
 def valid_link(url):
@@ -109,7 +125,8 @@ def valid_link(url):
 def get_user_list(user):
     with open('data.json','r+') as file:    
         file_data = json.load(file)
-        if user in file_data:
-            return file_data[user]
-        else:
-            return "Use !add (link) to get started"
+
+        if user not in file_data:
+            file_data[user] = []
+            
+        return file_data[user]

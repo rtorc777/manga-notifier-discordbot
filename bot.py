@@ -2,7 +2,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import discord
 import os
-from scraper import scrape_manga, get_user_list, remove_manga
+from scraper import scrape_manga, get_user_list, remove_manga, remove_all_manga, check_chapters
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -51,6 +51,13 @@ async def remove(ctx, id: int):
         await ctx.send(embed=embed)
     else:
         await ctx.send(manga)
+
+
+@bot.command()
+async def removeall(ctx):
+    user_id = str(ctx.message.author.id)
+    remove = remove_all_manga(user_id)
+    await ctx.send(remove)
         
 
 def create_embed(manga):
@@ -59,11 +66,10 @@ def create_embed(manga):
     latest_chapter = manga[url]["latest_chapter"]
 
     embed = discord.Embed(
-        color = discord.Color.green(),
         title = f'__{title}__',
     )
 
-    embed.add_field(name = "", value=f"**Link**: [HERE]({url})\n\n **Latest**: {latest_chapter}", inline=False)
+    embed.add_field(name = "", value=f"**Link**: [HERE]({url})\n\n**Latest**: {latest_chapter}", inline=False)
     embed.set_image(url=manga[url]["image"])
 
     return embed
@@ -90,5 +96,28 @@ async def list(ctx):
 
         await ctx.send(embed=embed)
 
+@bot.command()
+async def check(ctx):
+    user_id = str(ctx.message.author.id)
+    updates = check_chapters(user_id)
+
+    if not updates:
+        await ctx.send("No manga updates")
+    else:
+        for manga in updates: 
+            url = next(iter(manga))
+            latest_chapter = manga[url]["latest_chapter"]
+            latest_chapter_link = manga[url]["latest_chapter_link"]
+            
+            embed = create_embed(manga)
+            embed.color = discord.Color.blue()
+            embed.set_field_at(index=0, name = "", value=f"**New Chapter Release!**\n\n**Name: **: {latest_chapter}\n\n**Link**: [HERE]({latest_chapter_link})", inline=False)
+
+            await ctx.message.author.send(embed=embed)
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    message = reaction.message
+    await message.delete()
 
 bot.run(BOT_TOKEN)
