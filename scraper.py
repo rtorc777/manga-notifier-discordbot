@@ -61,6 +61,20 @@ def check_chapters(user):
     return updated_mangas 
 
 
+def check_all_users():
+    updated_mangas = {}
+
+    with open('data.json','r+') as file:    
+        file_data = json.load(file)
+
+        for user in file_data:
+            updates = check_chapters(user)
+            if updates:
+                updated_mangas[user] = updates
+    
+    return updated_mangas
+
+
 def add_manga(user, manga):
     with open('data.json','r+') as file:
         file_data = json.load(file)
@@ -128,5 +142,5 @@ def get_user_list(user):
 
         if user not in file_data:
             file_data[user] = []
-            
+
         return file_data[user]

@@ -1,8 +1,9 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import discord
 import os
-from scraper import scrape_manga, get_user_list, remove_manga, remove_all_manga, check_chapters
+import datetime
+from scraper import scrape_manga, get_user_list, remove_manga, remove_all_manga, check_chapters, check_all_users
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -12,6 +13,7 @@ bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 @bot.event
 async def on_ready():
+    check_for_latest.start()
     print("Manga bot is ready!")
     channel = bot.get_channel(CHANNEL_ID)
     await channel.send("Manga bot is ready!")
@@ -68,7 +70,6 @@ def create_embed(manga):
     embed = discord.Embed(
         title = f'__{title}__',
     )
-
     embed.add_field(name = "", value=f"**Link**: [HERE]({url})\n\n**Latest**: {latest_chapter}", inline=False)
     embed.set_image(url=manga[url]["image"])
 
@@ -96,28 +97,70 @@ async def list(ctx):
 
         await ctx.send(embed=embed)
 
+
 @bot.command()
 async def check(ctx):
     user_id = str(ctx.message.author.id)
     updates = check_chapters(user_id)
 
-    if not updates:
-        await ctx.send("No manga updates")
-    else:
+    if updates:
         for manga in updates: 
-            url = next(iter(manga))
-            latest_chapter = manga[url]["latest_chapter"]
-            latest_chapter_link = manga[url]["latest_chapter_link"]
-            
-            embed = create_embed(manga)
-            embed.color = discord.Color.blue()
-            embed.set_field_at(index=0, name = "", value=f"**New Chapter Release!**\n\n**Name: **: {latest_chapter}\n\n**Link**: [HERE]({latest_chapter_link})", inline=False)
-
+            embed = create_new_embed(manga)
             await ctx.message.author.send(embed=embed)
+    else:
+        await ctx.send("No manga updates")
+        
+
+@bot.command()
+async def checkall(ctx):
+    updates = check_all_users()
+
+    if updates:
+        for id in updates:
+            user = bot.get_user(int(id))
+            
+            for manga in updates[id]:
+                embed = create_new_embed(manga)
+                await user.send(embed=embed)
+    else:
+        await ctx.send("No manga updates")
+
+
+def create_new_embed(manga):
+    url = next(iter(manga))
+    latest_chapter = manga[url]["latest_chapter"]
+    latest_chapter_link = manga[url]["latest_chapter_link"]
+    
+    embed = create_embed(manga)
+    embed.color = discord.Color.blue()
+    embed.set_field_at(index=0, name = "", value=f"**New Chapter Release!**\n\n**Name: **: {latest_chapter}\n\n**Link**: [HERE]({latest_chapter_link})", inline=False)
+    return embed
+
 
 @bot.event
 async def on_reaction_add(reaction, user):
     message = reaction.message
     await message.delete()
+
+
+utc = datetime.timezone.utc
+
+times = [
+    datetime.time(hour=10, tzinfo=utc), #6AM EST
+    datetime.time(hour=22, tzinfo=utc)  #6PM EST
+]
+
+@tasks.loop(time=times)
+async def check_for_latest():
+    updates = check_all_users()
+
+    if updates:
+        for id in updates:
+            user = bot.get_user(int(id))
+            
+            for manga in updates[id]:
+                embed = create_new_embed(manga)
+                await user.send(embed=embed)
+
 
 bot.run(BOT_TOKEN)
